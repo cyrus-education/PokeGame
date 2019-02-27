@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Poke Game</title>
+    <style>* {padding: 0; margin: 0}</style>
+  </head>
+  <script src="js/pixi.min.js"></script>
+  <script src="dist/eventemitter3-timer.min.js"></script>
+  <body>
+    <script type="text/javascript">
+
+    let app = new PIXI.Application({
+       width: 800,         // default: 800
+       height: 600,        // default: 600
+       antialias: true,    // default: false
+       transparent: false, // default: false
+       resolution: 1       // default: 1
+  }
+);
+
+  app.renderer.backgroundColor = 0xffffff;
+  app.renderer.view.style.position = "absolute";
+  app.renderer.view.style.display = "block";
+  app.renderer.autoResize = true;
+  app.renderer.resize(window.innerWidth, window.innerHeight);
+
+  //Add the canvas that Pixi automatically created for you to the HTML document
+  document.body.appendChild(app.view);
+  //load an image and run the `setup` function when it's done
+  PIXI.loader
+    .add("images/fish.json")
+    .load(setup);
+
+    //Define any variables that are used in more than one function
+    var fish, fishBlue, fishPink, fishBol, changeFishTime, fishTimerEnd,  state, timerWidth, ellipseBlueContainer, rectBlueContainer, rectBlueContainerSmall, ellipsePinkContainer, rectPinkContainer, rectPinkContainerSmall, ellipse, blobs, blobSpeed, blobBol, distance, speed, distanceNum, speedNum, isBlobRect, hit;
+    var countdown = 60;
+
+    //set the timer
+    const timer = new EE3Timer.Timer(1000);
+    let insideBar = new PIXI.Graphics();
+
+//This `setup` function will run when the image has loaded
+function setup() {
+  //fish Change Viaiable
+  fishBol = true;   // if fishBol = true, then fish is pink
+  //Create the fish sprite
+  fishPink = PIXI.Texture.fromFrame('game-fish-pink.png');
+  fishBlue = PIXI.Texture.fromFrame('game-fish-blue.png');
+  fish = new PIXI.Sprite(fishBlue);
+
+  // make the sprite interactive
+  fish.interactive = true;
+  fish.buttonMode = true;
+
+
+  //changeFish();
+
+  fish.x = 20;
+  fish.y = innerHeight/2;
+  fish.scale.set(0.5,0.5);
+  fish.anchor.set(0,0);
+  fish.vx = 0;
+  fish.vy = 0;
+
+
+  //Add the cat to the stage
+  app.stage.addChild(fish);
+  changeFish();
+
+
+
+
+
+  //Capture the keyboard arrow keys
+  let left = keyboard(37),
+      up = keyboard(38),
+      right = keyboard(39),
+      down = keyboard(40);
+
+  //Up
+  up.press = () => {
+   fish.vy = -5;
+  };
+  up.release = () => {
+   if (!down.isDown) {
+     fish.vy = 0;
+   }
+  };
+  //Down
+  down.press = () => {
+    fish.vy = 5;
+  };
+  down.release = () => {
+    if (!up.isDown) {
+      fish.vy = 0;
+    }
+  };
+
+  //create distance and speed text
+  speedNum = 5;
+  distanceNum = 0;
+
+
+  var style = new PIXI.TextStyle({
+    fontFamily: 'Arial',
+    fontSize: 36,
+    fontStyle: 'italic',
+    fontWeight: 'bold',
+    fill: '#B8E0EA', // gradient
+    stroke: '#EC96B0',
+    strokeThickness: 5,
+
+});
+    distance = new PIXI.Text(distanceNum + " m", style);
+    distance.x = 45;
+    distance.y = 50;
+    app.stage.addChild(distance);
+    speed = new PIXI.Text(speedNum + " m/s", style);
+    speed.x = window.innerWidth - 160;
+    speed.y = 50;
+    app.stage.addChild(speed);
+
+    //create the timer bar
+    var timerBar = new PIXI.Container();
+    timerBar.position.set(190, 55);
+    app.stage.addChild(timerBar);
+    //Create the background rectangle
+    let bgBar = new PIXI.Graphics();
+    bgBar.lineStyle(2, 0x999999, 0.5);
+    bgBar.beginFill(0xffffff);
+    bgBar.drawRoundedRect(0, 0, 700, 36, 5);
+    bgBar.endFill();
+    timerBar.addChild(bgBar);
+    //Create the inside changing rectangle
+    insideBar.beginFill(0xE6E6E6);
+    timerWidth = 700;
+    insideBar.drawRoundedRect(0, 0, timerWidth, 36, 5);
+    insideBar.endFill();
+    timerBar.addChild(insideBar);
+
+
+    //An array to store all the numberOfBlobs
+     blobsRect = [];
+     blobsPinkEllipse = [];
+     blobsBlueEllipse = [];
+     blobSpeed = 10;
+
+     //Make the loops
+     let numberOfblob = 80,
+         Spacing = 440,
+         xOffset = 370;
+
+
+
+    //Make as many rects as there are `numberOfrect`
+    for (let i = 1; i < numberOfblob*2; i+=2) {
+
+      //Space each blob horizontally according to the `spacing` value.
+      //`xOffset` determines the point from the left of the screen
+      //at which the first blob should be added
+      // let rx = Spacing * i + rxOffset;
+      //Give the rect a random y position
+       let rx = randomInt(100, Spacing) * i;
+       let ry = randomInt(130, innerHeight-100);
+
+      //Make a rect
+      // rect = new PIXI.Graphics();
+      //Make a ellipse blob Container
+      //blue
+      ellipseBlueContainer = new PIXI.Sprite.fromImage('images/game-circle-blueblob.png')
+      ellipseBlueContainer.anchor.set(0,0);
+      ellipseBlueContainer.x = rx ;
+      ellipseBlueContainer.y = ry;
+      //Push the blob into the `blobs` array
+      blobsBlueEllipse.push(ellipseBlueContainer);
+      app.stage.addChild(ellipseBlueContainer);
+    }
+
+      for (let i = 1; i < numberOfblob*2; i+=2) {
+
+      //Give the rect a random y position
+       let rx = randomInt(100, Spacing) * i;
+       let ry = randomInt(130, innerHeight-100);
+      //pink
+      ellipsePinkContainer = new PIXI.Sprite.fromImage('images/game-circle-pinkblob.png')
+      ellipsePinkContainer.anchor.set(0,0);
+      ellipsePinkContainer.x = rx;
+      ellipsePinkContainer.y = ry;
+      blobsPinkEllipse.push(ellipsePinkContainer);
+      app.stage.addChild(ellipsePinkContainer);
+    }
+    for (let i = 2; i < numberOfblob; i+=3) {
+
+    //Give the rect a random y position
+    let rx = randomInt(100, Spacing) * i;
+     let ry = randomInt(130, innerHeight-100);
+     //Make a rect blob Container
+     //blue big
+     rectBlueContainer = new PIXI.Sprite.fromImage('images/game-rect-blueblob.png')
+     rectBlueContainer.anchor.set(0,0);
+     rectBlueContainer.x = rx;
+     rectBlueContainer.y = ry;
+     blobsRect.push(rectBlueContainer);
+     app.stage.addChild(rectBlueContainer);
+   }
+
+   for (let i = 2; i < numberOfblob; i+=3) {
+
+   //Give the rect a random y position
+   let rx = randomInt(100, Spacing) * i;
+   let ry = randomInt(130, innerHeight-100);
+    //pink big
+    rectPinkContainer = new PIXI.Sprite.fromImage('images/game-rect-pinkblob.png')
+    rectPinkContainer.anchor.set(0,0);
+    rectPinkContainer.x = rx;
+    rectPinkContainer.y = ry;
+    blobsRect.push(rectPinkContainer);
+    app.stage.addChild(rectPinkContainer);
+
+  }
+
+  for (let i = 2; i < numberOfblob; i+=2) {
+
+  //Give the rect a random y position
+  let rx = randomInt(100, Spacing) * i;
+   let ry = randomInt(130, innerHeight-100);
+   //blue small
+   rectBlueContainerSmall = new PIXI.Sprite.fromImage('images/game-rect-blueblob.png')
+   rectBlueContainerSmall.anchor.set(0,0);
+   rectBlueContainerSmall.scale.set(0.5);
+   rectBlueContainerSmall.x = rx;
+   rectBlueContainerSmall.y = ry;
+   blobsRect.push(rectBlueContainerSmall);
+   app.stage.addChild(rectBlueContainerSmall);
+ }
+
+ for (let i = 2; i < numberOfblob; i+=2) {
+
+ //Give the rect a random y position
+ let rx = randomInt(100, Spacing) * i;
+  let ry = randomInt(130, innerHeight-100);
+  //pink small
+  rectPinkContainerSmall = new PIXI.Sprite.fromImage('images/game-rect-pinkblob.png')
+  rectPinkContainerSmall.anchor.set(0,0);
+  rectPinkContainerSmall.scale.set(0.5);
+  rectPinkContainerSmall.x = rx;
+  rectPinkContainerSmall.y = ry;
+  blobsRect.push(rectPinkContainerSmall);
+  app.stage.addChild(rectPinkContainerSmall);
+
+}
+
+    //timer
+    timer.repeat = countdown;
+    timer.on('start', elapsed => { console.log('start'); });
+    timer.on('end', elapsed => {
+      console.log('end', elapsed);
+    });
+    timer.on('repeat', (elapsed, repeat) => {
+      console.log('repeat', repeat);
+      countdown --;
+      if(countdown <= 0){
+        window.location.href = "ranking.html";
+      }
+    });
+    timer.on('stop', elapsed => {});
+
+    timer.start();
+
+
+    //Set the game state
+    state = play;
+    //Start the game loop
+    app.ticker.add(delta => gameLoop(delta));
+  //  PIXI.timer.update();
+}
+
+function gameLoop(delta){
+
+  //Update the current game state:
+  state(delta);
+
+}
+
+function play(delta) {
+  //change distance and speed value
+  distanceNum = 0 + speedNum * (60-countdown);
+  distance.text = distanceNum + ' m';
+  speedNum = blobSpeed;
+  speed.text = speedNum + ' m/s';
+  //Set `fishHit` to `false` before checking for a collision
+  let fishHit = false;
+  let fishAccelarate = false;
+
+  blobsRect.forEach(function(blobrect) {
+    //Move the blob
+    blobrect.vx = -blobSpeed/10.0;
+    blobrect.x += blobrect.vx;
+    //Test for a collision. If any of the rects or ellipses are touching
+    //the fish, set `fishHit` to `true`
+    if(hitTestRectangle(fish, blobrect)) {
+      fishHit = true;
+      // console.log(hitTestRectangle(fish, blob));
+      // blob.destroy();
+
+       app.stage.removeChild(blobrect);
+       blobrect.x=-200;
+    }
+  });
+
+  blobsPinkEllipse.forEach(function(blobpinkellipse) {
+    //Move the blob
+    blobpinkellipse.vx = -blobSpeed/10.0;
+    blobpinkellipse.x += blobpinkellipse.vx;
+    //Test for a collision. If any of the rects or ellipses are touching
+    //the fish, set `fishHit` to `true`
+    if(hitTestRectangle(fish, blobpinkellipse)) {
+      if(!fishBol){
+        fishAccelarate = true;
+      }
+
+      // console.log(hitTestRectangle(fish, blob));
+      // blob.destroy();
+       app.stage.removeChild(blobpinkellipse);
+       blobpinkellipse.x=-200;
+    }
+  });
+
+  blobsBlueEllipse.forEach(function(blobblueellipse) {
+    //Move the blob
+    blobblueellipse.vx = -blobSpeed/10.0;
+    blobblueellipse.x += blobblueellipse.vx;
+    //Test for a collision. If any of the rects or ellipses are touching
+    //the fish, set `fishHit` to `true`
+    if(hitTestRectangle(fish, blobblueellipse)) {
+      if(fishBol){
+        fishAccelarate = true;
+      }
+      // console.log(hitTestRectangle(fish, blob));
+      // blob.destroy();
+       app.stage.removeChild(blobblueellipse);
+       blobblueellipse.x=-200;
+
+    }
+  });
+
+
+  //If the explorer is hit...
+  if(fishHit) {
+      if(blobSpeed > 4){
+        blobSpeed -= 2;
+      }
+    }
+    if(fishAccelarate){
+      blobSpeed += 4;
+    }
+
+
+
+
+  timer.timerManager.update(app.ticker.elapsedMS);
+  if(fishTimerEnd){
+
+    changeFishTime = randomInt(3000,7000);
+    changeFish();
+  }
+  insideBar.width = 700* countdown / 60;
+  // randomly change fish color
+  if (fishBol) {
+      fish.texture = fishBlue;
+  }
+  else {
+      fish.texture = fishPink;
+  }
+  //Use the cat's velocity to make it move
+  if(fish.y >= 170 && fish.y <= innerHeight-100){
+        fish.y += fish.vy
+  }
+  if(fish.y < 170){
+      fish.y = 170;
+  }
+  if(fish.y > innerHeight-100){
+    fish.y = innerHeight-100;
+  }
+
+
+}
+
+//The `randomInt` helper function
+function randomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+function changeFish(){
+  fishTimerEnd = false;
+
+  //changeFish();
+  var fishTimer = new EE3Timer.Timer(changeFishTime);
+  fishTimer.on('start', () => console.log('start'));
+  fishTimer.on('end', elapsed => {fishBol = !fishBol; fishTimerEnd = true});
+  fishTimer.start();
+
+}
+
+//The `hitTestRectangle` function
+function hitTestRectangle(r1, r2) {
+
+  //Define the variables we'll need to calculate
+  let hit, combinedHalfWidths, combinedHalfHeights, vx, vy;
+
+  //hit will determine whether there's a collision
+  hit = false;
+
+  //Find the center points of each sprite
+  r1.centerX = r1.x + r1.width / 2;
+  r1.centerY = r1.y + r1.height / 2;
+  r2.centerX = r2.x + r2.width / 2;
+  r2.centerY = r2.y + r2.height / 2;
+
+  //Find the half-widths and half-heights of each sprite
+  r1.halfWidth = r1.width / 2;
+  r1.halfHeight = r1.height / 2;
+  r2.halfWidth = r2.width / 2;
+  r2.halfHeight = r2.height / 2;
+
+  //Calculate the distance vector between the sprites
+  vx = r1.centerX - r2.centerX;
+  vy = r1.centerY - r2.centerY;
+
+  //Figure out the combined half-widths and half-heights
+  combinedHalfWidths = r1.halfWidth + r2.halfWidth;
+  combinedHalfHeights = r1.halfHeight + r2.halfHeight;
+
+  //Check for a collision on the x axis
+  if (Math.abs(vx) < combinedHalfWidths) {
+
+    //A collision might be occuring. Check for a collision on the y axis
+    if (Math.abs(vy) < combinedHalfHeights) {
+
+      //There's definitely a collision happening
+      hit = true;
+    } else {
+
+      //There's no collision on the y axis
+      hit = false;
+    }
+  } else {
+
+    //There's no collision on the x axis
+    hit = false;
+  }
+
+  //`hit` will be either `true` or `false`
+  return hit;
+};
+//The `keyboard` helper function
+function keyboard(keyCode) {
+  var key = {};
+  key.code = keyCode;
+  key.isDown = false;
+  key.isUp = true;
+  key.press = undefined;
+  key.release = undefined;
+  //The `downHandler`
+  key.downHandler = event => {
+    if (event.keyCode === key.code) {
+      if (key.isUp && key.press) key.press();
+      key.isDown = true;
+      key.isUp = false;
+    }
+    event.preventDefault();
+  };
+
+  //The `upHandler`
+  key.upHandler = event => {
+    if (event.keyCode === key.code) {
+      if (key.isDown && key.release) key.release();
+      key.isDown = false;
+      key.isUp = true;
+    }
+    event.preventDefault();
+  };
+
+  //Attach event listeners
+  window.addEventListener(
+    "keydown", key.downHandler.bind(key), false
+  );
+  window.addEventListener(
+    "keyup", key.upHandler.bind(key), false
+  );
+  return key;
+}
+  </script>
+
+  </body>
+</html>

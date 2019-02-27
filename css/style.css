@@ -1,0 +1,32 @@
+.rankingNo{
+
+  font-size: 18px;
+  color:#76C9E0;
+  line-height: 24px;
+}
+
+.playBtn{
+  display: block;
+height: 120px /* -- set image height -- */;
+width: 90px /* -- set image width -- */;
+background-image: url('../images/triangle.png');
+background-repeat: no-repeat;
+z-index:999;
+
+
+
+}
+
+.playBtn:hover{
+  background-image: url('../images/fish-sm-NEW.png');
+
+
+}
+
+.bgImg{
+  display: block;
+height: 457px /* -- set image height -- */;
+width: 500px /* -- set image width -- */;
+background-repeat: no-repeat;
+  background-image: url('../images/ranking-bg.png');
+}
