@@ -1,2 +1,2 @@
 # PokeGame
-An Web-based Interactive Game
+A Web-based Interactive Game
